@@ -1,0 +1,66 @@
+name: ORBIT daily run
+
+on:
+  schedule:
+    # Weekdays at 14:47 UTC = 7:47am Pacific in summer (PDT), 6:47am in winter (PST).
+    # GitHub cron is UTC-only; scheduled runs can start a few minutes late.
+    - cron: "47 14 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      agents:
+        description: "Optional: comma-separated agents to run (scout,forge,pixel,quill,pitch). Blank = let ORBIT decide."
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+concurrency:
+  group: orbit-run
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Run ORBIT
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          AGENTS: ${{ github.event.inputs.agents }}
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "::error::Add your API key as a repository secret named ANTHROPIC_API_KEY (see README)."
+            exit 1
+          fi
+          if [ -n "$AGENTS" ]; then
+            python -m orbit run --agents "$AGENTS"
+          else
+            python -m orbit run
+          fi
+
+      - name: Commit outputs back to the repo
+        if: always()
+        run: |
+          git config user.name "orbit-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add outputs reports data
+          if git diff --cached --quiet; then
+            echo "Nothing new to commit."
+            exit 0
+          fi
+          git commit -m "ORBIT run $(date -u +%F)"
+          for i in 1 2 3; do
+            git pull --rebase origin "${GITHUB_REF_NAME}" && git push origin "HEAD:${GITHUB_REF_NAME}" && exit 0
+            sleep $((i * 5))
+          done
+          exit 1

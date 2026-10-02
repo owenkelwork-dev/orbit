@@ -1,0 +1,28 @@
+# ORBIT settings. Edit freely; no code changes needed.
+
+[goal]
+target_usd = 10000
+
+[model]
+# Any current Claude model ID works here.
+name = "claude-opus-5-5"
+# low | medium | high | xhigh | max. Higher = better work, more tokens.
+effort = "medium"
+# Max web searches per agent call (SCOUT and PITCH use web search).
+max_web_searches = 5
+
+[budget]
+# The run is skipped once estimated API spend for the calendar month hits this.
+monthly_usd = 15.0
+# At most this many worker agents per run (ORBIT itself is not counted).
+max_agents_per_run = 2
+
+[niches]
+# What SCOUT researches for Etsy digital products.
+etsy = "budget and personal-finance planners for young adults"
+# What QUILL writes affiliate posts about.
+affiliate = "budget-friendly home office and productivity gear"
+# What kinds of brands PITCH looks for as UGC clients.
+ugc = "small DTC brands in home, kitchen, and desk accessories"
+# What PIXEL offers on Fiverr.
+fiverr = "YouTube thumbnail design"
